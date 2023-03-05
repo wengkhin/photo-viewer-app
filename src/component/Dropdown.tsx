@@ -2,18 +2,18 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./Dropdown.module.scss";
 
 interface DropdownProps {
-  data: item[];
+  data: Item[];
 }
 
-interface item {
+export interface Item {
   key: string;
   text: string;
-  value: string;
+  value: string | number;
 }
 
-function Dropdown(props: DropdownProps) {
-  const [data, setData] = useState(props.data);
-  const [selectedValue, setSelectedValue] = useState(props.data);
+export function Dropdown(props: DropdownProps) {
+  const [data] = useState(props.data);
+  const [selectedValue, setSelectedValue] = useState<Item[]>();
 
   const [open, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,15 +40,23 @@ function Dropdown(props: DropdownProps) {
         className={styles.badgeBox}
         onClick={() => setIsOpen((prev) => !prev)}
       >
-        {[...Array(10)].map((x, i) => (
-          <Badge />
+        {selectedValue?.map((val) => (
+          <Badge text={val.text} key={`${val.key}-badge`} />
         ))}
       </div>
       {open && (
         <div className={styles.menu} ref={menuRef}>
-          {[...Array(10)].map((x, i) => (
-            <div className={styles.item}>
-              <span className={styles.text}>Item {i}</span>
+          {data.map((d) => (
+            <div
+              className={styles.item}
+              key={`${d.key}-item`}
+              onClick={() => {
+                if (!selectedValue?.includes(d)) {
+                  setSelectedValue(selectedValue ? [...selectedValue, d] : [d]);
+                }
+              }}
+            >
+              <span className={styles.text}>{d.text}</span>
             </div>
           ))}
         </div>
@@ -57,12 +65,14 @@ function Dropdown(props: DropdownProps) {
   );
 }
 
-function Badge() {
+interface BadgeProps {
+  text: string;
+}
+
+function Badge(props: BadgeProps) {
   return (
     <span className={styles.badge}>
-      New <span className={styles.remove}>X</span>
+      {props.text} <span className={styles.remove}>X</span>
     </span>
   );
 }
-
-export default Dropdown;
