@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./Dropdown.module.scss";
 
 interface DropdownProps {
-  data: Item[];
+  items: Item[];
+  onChange: (items: Item[]) => void;
 }
 
 export interface Item {
@@ -12,11 +13,25 @@ export interface Item {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const [data] = useState(props.data);
-  const [selectedValue, setSelectedValue] = useState<Item[]>();
+  const [items, setItems] = useState<Item[]>(props.items);
+  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
 
-  const [open, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    props.onChange(selectedItems || []);
+
+    if (items.length === 0) {
+      setOpen(false);
+      return;
+    }
+
+    if (items.length > 0) {
+      setOpen(true);
+      return;
+    }
+  }, [selectedItems, items]);
 
   useEffect(() => {
     function handleClickOutside(event: TouchEvent | MouseEvent) {
@@ -24,11 +39,12 @@ export function Dropdown(props: DropdownProps) {
         menuRef.current &&
         !menuRef.current.contains(event.target as HTMLDivElement)
       ) {
-        setIsOpen(false);
+        setOpen(false);
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -38,21 +54,31 @@ export function Dropdown(props: DropdownProps) {
     <div className={styles.dropdown}>
       <div
         className={styles.badgeBox}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => {
+          items.length > 0 && setOpen((prev) => !prev);
+        }}
       >
-        {selectedValue?.map((val) => (
-          <Badge text={val.text} key={`${val.key}-badge`} />
+        {selectedItems?.map((val: Item) => (
+          <Badge
+            text={val.text}
+            key={`${val.key}-badge`}
+            removeHandler={() => {
+              setSelectedItems(selectedItems.filter((dd) => dd !== val));
+              setItems([...items, val]);
+            }}
+          />
         ))}
       </div>
       {open && (
         <div className={styles.menu} ref={menuRef}>
-          {data.map((d) => (
+          {items.map((d) => (
             <div
               className={styles.item}
               key={`${d.key}-item`}
               onClick={() => {
-                if (!selectedValue?.includes(d)) {
-                  setSelectedValue(selectedValue ? [...selectedValue, d] : [d]);
+                if (!selectedItems?.includes(d)) {
+                  setSelectedItems(selectedItems ? [...selectedItems, d] : [d]);
+                  setItems(items.filter((dd) => dd !== d));
                 }
               }}
             >
@@ -67,12 +93,16 @@ export function Dropdown(props: DropdownProps) {
 
 interface BadgeProps {
   text: string;
+  removeHandler: () => void;
 }
 
 function Badge(props: BadgeProps) {
   return (
     <span className={styles.badge}>
-      {props.text} <span className={styles.remove}>X</span>
+      {props.text}{" "}
+      <span className={styles.remove} onClick={() => props.removeHandler()}>
+        X
+      </span>
     </span>
   );
 }
