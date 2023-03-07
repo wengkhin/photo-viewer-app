@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import styles from "./Dropdown.module.scss";
 
 interface DropdownProps {
-  items: Item[];
+  items?: Item[];
   onChange: (items: Item[]) => void;
 }
 
@@ -13,14 +13,20 @@ export interface Item {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const [items, setItems] = useState<Item[]>(props.items);
+  const {items: data, onChange } = props;
+
+  const [items, setItems] = useState<Item[]>(data|| []);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    props.onChange(selectedItems || []);
+    setItems(data || []);
+  },[data])
+
+  useEffect(() => {
+    onChange(selectedItems);
 
     if (items.length === 0) {
       setOpen(false);
@@ -31,7 +37,7 @@ export function Dropdown(props: DropdownProps) {
       setOpen(true);
       return;
     }
-  }, [selectedItems, items]);
+  }, [selectedItems, items, onChange]);
 
   useEffect(() => {
     function handleClickOutside(event: TouchEvent | MouseEvent) {
