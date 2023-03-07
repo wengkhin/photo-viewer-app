@@ -1,10 +1,17 @@
 .dropdown {
   .badgeBox {
     border: 1px solid #22242626;
+    background-color: #ffffff;
     min-height: 1.5em;
     padding: 0.5rem;
     border-radius: 0.3rem;
     cursor: pointer;
+    height: 22px;
+    overflow-y: auto;
+
+    .label {
+      color: #22242626;
+    }
   }
 
   .menu {
@@ -12,6 +19,8 @@
     border: 1px solid #22242626;
     max-height: 8em;
     overflow-y: scroll;
+    position: relative;
+    background-color: #ffffff;
 
     > .item {
       height: 2em;

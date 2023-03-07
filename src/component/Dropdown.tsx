@@ -4,6 +4,7 @@ import styles from "./Dropdown.module.scss";
 interface DropdownProps {
   items?: Item[];
   onChange: (items: Item[]) => void;
+  label?: string;
 }
 
 export interface Item {
@@ -13,9 +14,9 @@ export interface Item {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const {items: data, onChange } = props;
+  const { items: data, onChange, label } = props;
 
-  const [items, setItems] = useState<Item[]>(data|| []);
+  const [items, setItems] = useState<Item[]>(data || []);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
 
   const [open, setOpen] = useState(false);
@@ -23,7 +24,7 @@ export function Dropdown(props: DropdownProps) {
 
   useEffect(() => {
     setItems(data || []);
-  },[data])
+  }, [data]);
 
   useEffect(() => {
     onChange(selectedItems);
@@ -64,6 +65,9 @@ export function Dropdown(props: DropdownProps) {
           items.length > 0 && setOpen((prev) => !prev);
         }}
       >
+        {selectedItems.length == 0 && (
+          <span className={styles.label}>{label}</span>
+        )}
         {selectedItems?.map((val: Item) => (
           <Badge
             text={val.text}
