@@ -18,9 +18,10 @@
     border-radius: 0.3em;
     border: 1px solid #22242626;
     max-height: 8em;
-    overflow-y: scroll;
+    overflow-y: auto;
     position: relative;
     background-color: #ffffff;
+    z-index: 1;
 
     > .item {
       height: 2em;

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import styles from "./App.module.scss";
 import axios from "axios";
+
 import { Dropdown, Item } from "./component/Dropdown";
+import styles from "./App.module.scss";
 
 import GMap from "./component/GMap";
 
@@ -15,7 +16,8 @@ interface Photo {
   takenOn: string;
   latitude: string;
   longitude: string;
-  thumbnail: string;
+  thumbnailM: string;
+  thumbnailSq: string;
 }
 
 function App() {
@@ -25,7 +27,7 @@ function App() {
 
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
-  const [selectedPhotos, setSelectedPhotos] = useState();
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
 
   const fetchBrands = async () => {
     axios
@@ -57,7 +59,7 @@ function App() {
         .then(function (response) {
           const cameras = response.data.cameras.camera;
           const prepModels = cameras.map((camera: any) => ({
-            key: camera.id,
+            key: `${brand.value}-${camera.id}`,
             text: camera.name._content,
             value: `${brand.value}/${camera.id}`,
           }));
@@ -76,7 +78,7 @@ function App() {
 
   const searchPhotos = async () => {
     const extrasParam = `&extras=${encodeURI(
-      "url_m,geo,owner_name,date_taken"
+      "url_sq,url_m,geo,owner_name,date_taken"
     )}`;
     const hasGeoParam = "&has_geo=1";
 
@@ -95,7 +97,8 @@ function App() {
             takenOn: d.datetaken,
             latitude: d.latitude,
             longitude: d.longitude,
-            thumbnail: d.url_m,
+            thumbnailM: d.url_m,
+            thumbnailSq: d.url_sq,
           }));
 
           if (photos) {
@@ -109,15 +112,22 @@ function App() {
         });
     });
   };
-  const GOOGLE_MAP_API = process.env.REACT_APP_GOOGLE_MAP_API || "";
+
+  const getMarkers = (val?: Photo[]) => {
+    if (!val) return [];
+
+    return val.map((photo) => ({
+      latitude: parseFloat(photo.latitude),
+      longitude: parseFloat(photo.longitude),
+      owner: photo.ownerName,
+      date: photo.takenOn,
+      thumbnail: photo.thumbnailSq,
+    }));
+  };
+
   useEffect(() => {
     fetchBrands();
   }, []);
-
-  const [loc, setLoc] = useState([
-    { latitude: 77, longitude: 99 },
-    { latitude: 33, longitude: 77 },
-  ]);
 
   useEffect(() => {
     if (selectedBrands?.length === 0) return;
@@ -125,15 +135,11 @@ function App() {
     fetchModels();
   }, [selectedBrands]);
 
-  useEffect(() => {
-    if (selectedModels?.length === 0) return;
-
-    searchPhotos();
-  }, [selectedModels]);
   return (
     <>
       <div className={styles.navigation}>
         <div className={styles.logo}>Photo Viewer App</div>
+        <div className={styles.buffer}></div>
         <div className={styles.brandsDropdown}>
           <Dropdown
             items={brands}
@@ -153,7 +159,15 @@ function App() {
           />
         </div>
         <div className={styles.search}>
-          <button className={styles.searchButton}>Search</button>
+          <button
+            className={styles.searchButton}
+            onClick={() => {
+              if (selectedModels?.length === 0) return;
+              searchPhotos();
+            }}
+          >
+            Search
+          </button>
         </div>
       </div>
 
@@ -161,13 +175,18 @@ function App() {
         <div className={styles.content}>
           <div className={styles.imagesContainer}>
             {photos?.map((photo) => (
-              <div className={styles.imageitem}>
+              <div
+                className={styles.imageitem}
+                onClick={() => {
+                  setSelectedPhoto(photo);
+                }}
+              >
                 <div className={styles.location}>
                   <span style={{ float: "left" }}>
                     Lat: {photo.latitude} Lng: {photo.longitude}
                   </span>
                 </div>
-                <img src={photo.thumbnail} />
+                <img src={photo.thumbnailM} />
                 <div className={styles.extraDesc}>
                   <span style={{ float: "left" }}>on {photo.takenOn}</span>
                   <span style={{ float: "right" }}>by {photo.ownerName}</span>
@@ -177,13 +196,7 @@ function App() {
           </div>
         </div>
         <div className={styles.sidebar}>
-          <GMap
-            googleMapURL={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAP_API}&v=3.exp&libraries=geometry,drawing,places`}
-            loadingElement={<div style={{ height: "100%", width: "100%" }} />}
-            containerElement={<div style={{ height: "100%", width: "100%" }} />}
-            mapElement={<div style={{ height: "100%", width: "100%" }} />}
-            markers={loc}
-          />
+          <GMap markers={getMarkers(photos)} />
         </div>
       </div>
     </>

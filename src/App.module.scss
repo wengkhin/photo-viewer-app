@@ -13,14 +13,18 @@ body {
 
   .logo {
     font-weight: 800;
-    width: 15rem;
+    width: 160px;
     padding: 12px;
   }
 
   .brandsDropdown,
-  .modelsDropdown,
+  .modelsDropdown {
+    padding: 5px;
+    flex: 2;
+  }
+
   .search {
-    width: 15rem;
+    flex: 1;
     padding: 5px;
   }
 
@@ -32,6 +36,10 @@ body {
     border: 1px solid #22242626;
     border-radius: 0.3rem;
     cursor: pointer;
+  }
+
+  .buffer {
+    flex: 1;
   }
 }
 

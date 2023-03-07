@@ -33,11 +33,6 @@ export function Dropdown(props: DropdownProps) {
       setOpen(false);
       return;
     }
-
-    if (items.length > 0) {
-      setOpen(true);
-      return;
-    }
   }, [selectedItems, items, onChange]);
 
   useEffect(() => {
@@ -65,7 +60,7 @@ export function Dropdown(props: DropdownProps) {
           items.length > 0 && setOpen((prev) => !prev);
         }}
       >
-        {selectedItems.length == 0 && (
+        {selectedItems.length === 0 && (
           <span className={styles.label}>{label}</span>
         )}
         {selectedItems?.map((val: Item) => (
