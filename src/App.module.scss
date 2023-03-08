@@ -63,10 +63,18 @@ body {
         > img {
           width: 100%;
           box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+          border-radius: 8px;
+        }
+
+        > img.selected {
+          box-shadow: rgb(85 91 255) 0px 0px 0px 3px,
+            rgb(31 193 27) 0px 0px 0px 6px, rgb(255 217 19) 0px 0px 0px 9px,
+            rgb(255 156 85) 0px 0px 0px 12px, rgb(255 85 85) 0px 0px 0px 15px;
         }
 
         .location {
           font-size: 0.5em;
+          z-index: 1;
         }
 
         .extraDesc {

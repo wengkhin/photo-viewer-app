@@ -4,14 +4,16 @@ import axios from "axios";
 import { Dropdown, Item } from "./component/Dropdown";
 import styles from "./App.module.scss";
 
-import GMap from "./component/GMap";
+import GMap, { Position } from "./component/GMap";
 
 const FLICKR_ENDPOINT_URL = process.env.REACT_APP_FLICKR_ENDPOINT_URL;
 
 const apiKeyParam = `&api_key=${process.env.REACT_APP_FLICKR_KEY}`;
 const formatKeyParam = "&format=json&nojsoncallback=1";
 
-interface Photo {
+export interface Photo {
+  id: number;
+  owner: string;
   ownerName: string;
   takenOn: string;
   latitude: string;
@@ -28,6 +30,10 @@ function App() {
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
+  const [selectedMarker, setSelectedMarker] = useState<{
+    owner: string;
+    id: number;
+  }>();
 
   const fetchBrands = async () => {
     axios
@@ -51,7 +57,7 @@ function App() {
   };
 
   const fetchModels = async () => {
-    selectedBrands?.map((brand) => {
+    selectedBrands?.forEach((brand) => {
       axios
         .get(
           `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.cameras.getBrandModels&brand=${brand.value}&${apiKeyParam}${formatKeyParam}`
@@ -82,17 +88,19 @@ function App() {
     )}`;
     const hasGeoParam = "&has_geo=1";
 
-    selectedModels?.map((model) => {
+    selectedModels?.forEach((model) => {
       const cameraParam = `&camera=${model.value}`;
 
       axios
         .get(
-          `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.photos.search&${cameraParam}${hasGeoParam}${apiKeyParam}${formatKeyParam}${extrasParam}`
+          `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.photos.search&${cameraParam}${hasGeoParam}${apiKeyParam}${formatKeyParam}${extrasParam}&per_page=30`
         )
         .then(function (response) {
           const data = response.data.photos.photo;
 
           const prepPhotos: Photo[] = data.map((d: any) => ({
+            id: d.id,
+            owner: d.owner,
             ownerName: d.ownername,
             takenOn: d.datetaken,
             latitude: d.latitude,
@@ -119,7 +127,9 @@ function App() {
     return val.map((photo) => ({
       latitude: parseFloat(photo.latitude),
       longitude: parseFloat(photo.longitude),
-      owner: photo.ownerName,
+      ownerName: photo.ownerName,
+      owner: photo.owner,
+      id: photo.id,
       date: photo.takenOn,
       thumbnail: photo.thumbnailSq,
     }));
@@ -133,7 +143,15 @@ function App() {
     if (selectedBrands?.length === 0) return;
 
     fetchModels();
-  }, [selectedBrands]);
+  }, [selectedBrands, fetchModels]);
+
+  const center = selectedPhoto
+    ? ({
+        lat: parseFloat(selectedPhoto.latitude),
+        lng: parseFloat(selectedPhoto.longitude),
+      } as Position)
+    : undefined;
+  const zoom = selectedPhoto ? 9 : undefined;
 
   return (
     <>
@@ -174,29 +192,60 @@ function App() {
       <div className={styles.main}>
         <div className={styles.content}>
           <div className={styles.imagesContainer}>
-            {photos?.map((photo) => (
-              <div
-                className={styles.imageitem}
-                onClick={() => {
-                  setSelectedPhoto(photo);
-                }}
-              >
-                <div className={styles.location}>
-                  <span style={{ float: "left" }}>
-                    Lat: {photo.latitude} Lng: {photo.longitude}
-                  </span>
+            {photos?.map((photo) => {
+              let isSelected = false;
+              if (selectedPhoto) {
+                if (
+                  selectedPhoto.owner === photo.owner &&
+                  selectedPhoto.id === photo.id
+                ) {
+                  isSelected = true;
+                }
+              }
+
+              if (selectedMarker) {
+                if (
+                  selectedMarker.owner === photo.owner &&
+                  selectedMarker.id === photo.id
+                ) {
+                  isSelected = true;
+                }
+              }
+
+              return (
+                <div
+                  className={styles.imageitem}
+                  onClick={() => {
+                    setSelectedPhoto(photo);
+                    setSelectedMarker(undefined);
+                  }}
+                >
+                  <div className={styles.location}>
+                    <span style={{ float: "left" }}>
+                      Lat: {photo.latitude} Lng: {photo.longitude}
+                    </span>
+                  </div>
+                  <img
+                    src={photo.thumbnailM}
+                    className={isSelected ? styles.selected : undefined}
+                  />
+                  <div className={styles.extraDesc}>
+                    <span style={{ float: "left" }}>on {photo.takenOn}</span>
+                    <span style={{ float: "right" }}>by {photo.ownerName}</span>
+                  </div>
                 </div>
-                <img src={photo.thumbnailM} />
-                <div className={styles.extraDesc}>
-                  <span style={{ float: "left" }}>on {photo.takenOn}</span>
-                  <span style={{ float: "right" }}>by {photo.ownerName}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
         <div className={styles.sidebar}>
-          <GMap markers={getMarkers(photos)} />
+          <GMap
+            markers={getMarkers(photos)}
+            center={center}
+            zoom={zoom}
+            setSelectedMarker={setSelectedMarker}
+            setSelectedPhoto={setSelectedPhoto}
+          />
         </div>
       </div>
     </>
