@@ -65,8 +65,8 @@ function App() {
 
     const newFilteredPhotos = photos.filter(
       (photo) =>
-        photo.ownerName.includes(filterQuery) ||
-        photo.takenOn.includes(filterQuery) ||
+        photo.ownerName.toLowerCase().includes(filterQuery) ||
+        photo.takenOn.toLowerCase().includes(filterQuery) ||
         matchedPosition(photo.position, filterQuery)
     );
 
@@ -221,12 +221,17 @@ function App() {
 
       <div className={styles.main}>
         <div className={styles.content}>
-          <input
-            type={"text"}
-            onChange={(event) =>
-              setFilterQuery(event.target.value.toLowerCase())
-            }
-          />
+          <div className={styles.filterContainer}>
+            {photos && (
+              <input
+                type="text"
+                placeholder="Search for photographer name, photo taken date time and coordinates now"
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setFilterQuery(event.target.value.toLowerCase())
+                }
+              />
+            )}
+          </div>
           <div className={styles.imagesContainer}>
             {photosToDisplay?.map((photo) => {
               let isSelected = false;
