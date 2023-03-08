@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
 import { Dropdown, Item } from "./component/Dropdown";
@@ -25,10 +25,53 @@ function App() {
   const [brands, setBrands] = useState<Item[]>();
   const [models, setModels] = useState<Item[]>();
   const [photos, setPhotos] = useState<Photo[]>();
+  const [photosToDisplay, setPhotosToDisplay] = useState<Photo[]>();
 
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
+  const [filterQuery, setFilterQuery] = useState<string>("");
+
+  function isNumeric(str: string) {
+    if (str.match(/^-?\d+$/) || str.match(/^\d+\.\d+$/)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function matchedPosition(position: Position, filterQuery: string) {
+    if (isNumeric(filterQuery)) {
+      return false;
+    }
+
+    const lat = position.lat.toString();
+    const lng = position.lng.toString();
+
+    if (lat.includes(filterQuery) || lng.includes(filterQuery)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  useEffect(() => {
+    if (!photos) return;
+
+    if (filterQuery?.length <= 0) {
+      setPhotosToDisplay(photos);
+      return;
+    }
+
+    const newFilteredPhotos = photos.filter(
+      (photo) =>
+        photo.ownerName.includes(filterQuery) ||
+        photo.takenOn.includes(filterQuery) ||
+        matchedPosition(photo.position, filterQuery)
+    );
+
+    setPhotosToDisplay(newFilteredPhotos);
+  }, [filterQuery]);
 
   const fetchBrands = async () => {
     axios
@@ -107,9 +150,12 @@ function App() {
           }));
 
           if (photos) {
-            setPhotos([...photos, ...prepPhotos]);
+            const newPhotos = [...photos, ...prepPhotos];
+            setPhotos(newPhotos);
+            setPhotosToDisplay(newPhotos);
           } else {
             setPhotos(prepPhotos);
+            setPhotosToDisplay(prepPhotos);
           }
         })
         .catch(function (error) {
@@ -168,15 +214,21 @@ function App() {
               searchPhotos();
             }}
           >
-            Search
+            Get
           </button>
         </div>
       </div>
 
       <div className={styles.main}>
         <div className={styles.content}>
+          <input
+            type={"text"}
+            onChange={(event) =>
+              setFilterQuery(event.target.value.toLowerCase())
+            }
+          />
           <div className={styles.imagesContainer}>
-            {photos?.map((photo) => {
+            {photosToDisplay?.map((photo) => {
               let isSelected = false;
               if (selectedPhoto) {
                 if (
@@ -214,7 +266,7 @@ function App() {
         </div>
         <div className={styles.sidebar}>
           <GMap
-            photos={photos}
+            photos={photosToDisplay}
             center={center}
             zoom={zoom}
             setSelectedPhoto={setSelectedPhoto}
