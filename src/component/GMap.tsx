@@ -10,69 +10,39 @@ const InfoWindow = require("react-google-maps").InfoWindow;
 
 const GOOGLE_MAP_API = process.env.REACT_APP_GOOGLE_MAP_API || "";
 
-interface MarkerData {
-  latitude: number;
-  longitude: number;
-  ownerName: string;
-  owner: string;
-  id: number;
-  date: string;
-  thumbnail: string;
-}
-
 export interface Position {
   lat: number;
   lng: number;
 }
 
 interface GMapProps {
-  markers: MarkerData[];
+  photos?: Photo[];
   center?: Position;
   zoom?: number;
-  setSelectedMarker: React.Dispatch<
-    React.SetStateAction<
-      | {
-          owner: string;
-          id: number;
-        }
-      | undefined
-    >
-  >;
   setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
 }
 
 interface RGMProps {
-  markers: MarkerData[];
+  photos: Photo[];
   center?: Position;
   zoom?: number;
-  setSelectedMarker: React.Dispatch<
-    React.SetStateAction<
-      | {
-          owner: string;
-          id: number;
-        }
-      | undefined
-    >
-  >;
   setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
 }
 
-const INIT_POSITION = { lat: 39.381266, lng: -97.922211 };
-const INIT_ZOOM = 3;
+const INIT_POSITION: Position = { lat: 39.381266, lng: -97.922211 };
+const INIT_ZOOM: number = 3;
 
 const RGM = withScriptjs(
   withGoogleMap((props: RGMProps) => {
-    const { markers, center, zoom, setSelectedMarker, setSelectedPhoto } =
-      props;
+    const { photos, center, zoom, setSelectedPhoto } = props;
 
     return (
       <GoogleMap center={center || INIT_POSITION} zoom={zoom || INIT_ZOOM}>
-        {markers.map((marker: MarkerData) => {
+        {photos?.map((marker: Photo) => {
           return (
             <GMarker
-              marker={marker}
+              photo={marker}
               center={center}
-              setSelectedMarker={setSelectedMarker}
               setSelectedPhoto={setSelectedPhoto}
             />
           );
@@ -83,7 +53,7 @@ const RGM = withScriptjs(
 );
 
 function GMap(props: GMapProps) {
-  const { center, zoom, setSelectedMarker, setSelectedPhoto } = props;
+  const { center, zoom, setSelectedPhoto, photos } = props;
 
   return (
     <RGM
@@ -91,72 +61,63 @@ function GMap(props: GMapProps) {
       loadingElement={<div style={{ height: "100%", width: "100%" }} />}
       containerElement={<div style={{ height: "100%", width: "100%" }} />}
       mapElement={<div style={{ height: "100%", width: "100%" }} />}
-      markers={props.markers}
+      photos={photos}
       center={center}
       zoom={zoom}
-      setSelectedMarker={setSelectedMarker}
       setSelectedPhoto={setSelectedPhoto}
     />
   );
 }
 
 interface GMarkerProps {
-  marker: MarkerData;
+  photo: Photo;
   moreDetails?: boolean;
   center?: Position;
-  setSelectedMarker: React.Dispatch<
-    React.SetStateAction<
-      | {
-          owner: string;
-          id: number;
-        }
-      | undefined
-    >
-  >;
   setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
 }
 
 function GMarker(props: GMarkerProps) {
-  const { marker, center, setSelectedMarker, setSelectedPhoto } = props;
+  const { photo, center, setSelectedPhoto } = props;
 
   const [moreDetails, setMoreDetails] = useState(false);
 
   useEffect(() => {
     setMoreDetails(false);
 
-    if (center?.lat === marker.latitude && center?.lng === marker.longitude) {
+    if (
+      center?.lat === photo.position.lat &&
+      center?.lng === photo.position.lng
+    ) {
       setMoreDetails(true);
     }
-  }, [center, marker.longitude, marker.latitude]);
+  }, [center, photo.position.lng, photo.position.lat]);
 
   return (
     <Marker
-      position={{ lat: marker.latitude, lng: marker.longitude }}
-      url={marker.thumbnail}
-      key={`${marker.latitude}${marker.longitude}${marker.date}`}
+      position={{ lat: photo.position.lat, lng: photo.position.lng }}
+      url={photo.thumbnailSq}
+      key={`${photo.position.lat}${photo.position.lng}${photo.takenOn}`}
       onClick={() => {
         if (moreDetails) {
-          setSelectedMarker(undefined);
           setSelectedPhoto(undefined);
           setMoreDetails(false);
         } else {
           setMoreDetails(true);
-          setSelectedMarker({ owner: marker.owner, id: marker.id });
+          setSelectedPhoto(photo);
         }
       }}
     >
       {moreDetails === true && (
         <InfoWindow
           onCloseClick={() => {
-            setSelectedMarker(undefined);
             setSelectedPhoto(undefined);
             setMoreDetails(false);
           }}
         >
           <MarkerPopup
-            imageUrl={marker.thumbnail}
-            author={marker.ownerName}
-            date={marker.date}
+            imageUrl={photo.thumbnailSq}
+            author={photo.ownerName}
+            date={photo.takenOn}
           />
         </InfoWindow>
       )}

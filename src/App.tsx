@@ -16,8 +16,7 @@ export interface Photo {
   owner: string;
   ownerName: string;
   takenOn: string;
-  latitude: string;
-  longitude: string;
+  position: Position;
   thumbnailM: string;
   thumbnailSq: string;
 }
@@ -30,10 +29,6 @@ function App() {
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
-  const [selectedMarker, setSelectedMarker] = useState<{
-    owner: string;
-    id: number;
-  }>();
 
   const fetchBrands = async () => {
     axios
@@ -103,8 +98,10 @@ function App() {
             owner: d.owner,
             ownerName: d.ownername,
             takenOn: d.datetaken,
-            latitude: d.latitude,
-            longitude: d.longitude,
+            position: {
+              lat: parseFloat(d.latitude),
+              lng: parseFloat(d.longitude),
+            },
             thumbnailM: d.url_m,
             thumbnailSq: d.url_sq,
           }));
@@ -121,20 +118,6 @@ function App() {
     });
   };
 
-  const getMarkers = (val?: Photo[]) => {
-    if (!val) return [];
-
-    return val.map((photo) => ({
-      latitude: parseFloat(photo.latitude),
-      longitude: parseFloat(photo.longitude),
-      ownerName: photo.ownerName,
-      owner: photo.owner,
-      id: photo.id,
-      date: photo.takenOn,
-      thumbnail: photo.thumbnailSq,
-    }));
-  };
-
   useEffect(() => {
     fetchBrands();
   }, []);
@@ -143,18 +126,19 @@ function App() {
     if (selectedBrands?.length === 0) return;
 
     fetchModels();
-  }, [selectedBrands, fetchModels]);
+  }, [selectedBrands]);
 
   const center = selectedPhoto
     ? ({
-        lat: parseFloat(selectedPhoto.latitude),
-        lng: parseFloat(selectedPhoto.longitude),
+        lat: selectedPhoto.position.lat,
+        lng: selectedPhoto.position.lng,
       } as Position)
     : undefined;
+
   const zoom = selectedPhoto ? 9 : undefined;
 
   return (
-    <>
+    <div>
       <div className={styles.navigation}>
         <div className={styles.logo}>Photo Viewer App</div>
         <div className={styles.buffer}></div>
@@ -203,26 +187,16 @@ function App() {
                 }
               }
 
-              if (selectedMarker) {
-                if (
-                  selectedMarker.owner === photo.owner &&
-                  selectedMarker.id === photo.id
-                ) {
-                  isSelected = true;
-                }
-              }
-
               return (
                 <div
                   className={styles.imageitem}
                   onClick={() => {
                     setSelectedPhoto(photo);
-                    setSelectedMarker(undefined);
                   }}
                 >
                   <div className={styles.location}>
                     <span style={{ float: "left" }}>
-                      Lat: {photo.latitude} Lng: {photo.longitude}
+                      Lat: {photo.position.lat} Lng: {photo.position.lng}
                     </span>
                   </div>
                   <img
@@ -240,15 +214,14 @@ function App() {
         </div>
         <div className={styles.sidebar}>
           <GMap
-            markers={getMarkers(photos)}
+            photos={photos}
             center={center}
             zoom={zoom}
-            setSelectedMarker={setSelectedMarker}
             setSelectedPhoto={setSelectedPhoto}
           />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
