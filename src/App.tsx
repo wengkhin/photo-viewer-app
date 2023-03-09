@@ -8,7 +8,7 @@ import noResult from "./image/zoom.png";
 
 import GMap from "./component/GMap";
 import { Dropdown, Item } from "./component/Dropdown";
-import { checkMatchPosition, flickrURL } from "./Helpers";
+import { checkMatchPosition, flickrURL, FLICKR } from "./Helpers";
 
 export interface Photo {
   id: number;
@@ -83,7 +83,7 @@ function App() {
 
   const fetchBrands = async () => {
     axios
-      .get(flickrURL("flickr.cameras.getBrands"))
+      .get(flickrURL(FLICKR.CAMERAS_GET_BRANDS))
       .then(function (response) {
         const brands = response.data.brands.brand;
 
@@ -104,9 +104,9 @@ function App() {
     selectedModels?.forEach((model) => {
       axios
         .get(
-          flickrURL("flickr.photos.search", [
+          flickrURL(FLICKR.PHOTO_SEARCH, [
             `camera=${model.value}`,
-            "per_page=30",
+            "per_page=50",
             "has_geo=1",
             `extras=${encodeURI("url_sq,url_m,geo,owner_name,date_taken")}`,
           ])
@@ -152,7 +152,7 @@ function App() {
       promises.push(
         axios
           .get(
-            flickrURL("flickr.cameras.getBrandModels", [`brand=${brand.value}`])
+            flickrURL(FLICKR.CAMERAS_GET_BRAND_MODELS, [`brand=${brand.value}`])
           )
           .then((response) => {
             const cameras = response.data.cameras.camera;

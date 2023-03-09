@@ -24,6 +24,12 @@ export function checkMatchPosition(position: Position, filterQuery: string) {
 }
 
 const FLICKR_ENDPOINT_URL = process.env.REACT_APP_FLICKR_ENDPOINT_URL;
+export const FLICKR = {
+  PHOTO_SEARCH: "flickr.photos.search",
+  CAMERAS_GET_BRANDS: "flickr.cameras.getBrands",
+  CAMERAS_GET_BRAND_MODELS: "flickr.cameras.getBrandModels",
+};
+
 export function flickrURL(method: string, extras?: string[]) {
   const methodParam = `method=${method}`;
   const apiKeyParam = `&api_key=${process.env.REACT_APP_FLICKR_KEY}`;
