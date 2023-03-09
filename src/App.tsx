@@ -169,7 +169,10 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (selectedBrands?.length === 0) return;
+    if (selectedBrands?.length === 0) {
+      return;
+    }
+    setModels(undefined);
 
     fetchModels();
   }, [selectedBrands]);
@@ -186,7 +189,9 @@ function App() {
   return (
     <div>
       <div className={styles.navigation}>
-        <div className={styles.logo}>Photo Viewer App</div>
+        <div className={styles.logo}>
+          <a href="/">Photo Viewer App</a>
+        </div>
         <div className={styles.buffer}></div>
         <div className={styles.brandsDropdown}>
           <Dropdown
