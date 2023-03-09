@@ -45,6 +45,7 @@ function App() {
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
 
+  // To focus on marker with zoom 9
   const center = selectedPhoto
     ? ({
         lat: selectedPhoto.position.lat,
@@ -53,6 +54,12 @@ function App() {
     : undefined;
   const zoom = selectedPhoto ? 9 : undefined;
 
+  // Init: Fetch all brands
+  useEffect(() => {
+    fetchBrands();
+  }, []);
+
+  // Filter based on photographer, date taken, coordinates
   useEffect(() => {
     if (!photos) return;
 
@@ -71,10 +78,8 @@ function App() {
     setPhotosToDisplay(newFilteredPhotos);
   }, [filterQuery]);
 
-  useEffect(() => {
-    fetchBrands();
-  }, []);
-
+  // When selectedBrands updated, fetch models at the same time
+  // Remove selectedModels if its' brand is not selected
   useEffect(() => {
     const selectedBrandStrs = selectedBrands.map((sb) => sb.key);
     const newSelectedModels = selectedModels.filter((sm) =>
@@ -87,6 +92,7 @@ function App() {
     fetchModels();
   }, [selectedBrands]);
 
+  // Fetch brands
   const fetchBrands = async () => {
     axios
       .get(flickrURL(FLICKR.CAMERAS_GET_BRANDS))
@@ -106,6 +112,7 @@ function App() {
       });
   };
 
+  // Search photos
   const searchPhotos = async () => {
     selectedModels?.forEach((model) => {
       axios
@@ -148,6 +155,7 @@ function App() {
     });
   };
 
+  // Fetch models use async
   async function fetchModels() {
     const allModels: Item[] = [];
     let promises: any = [];

@@ -1,5 +1,6 @@
 import { Position } from "./App";
 
+// Check is string number
 export function isNumeric(str: string) {
   if (str.match(/^-?\d+$/) || str.match(/^\d+\.\d+$/)) {
     return true;
@@ -8,6 +9,7 @@ export function isNumeric(str: string) {
   return false;
 }
 
+// A condition used for filtering/search
 export function checkMatchPosition(position: Position, filterQuery: string) {
   if (isNumeric(filterQuery)) {
     return false;
@@ -30,6 +32,7 @@ export const FLICKR = {
   CAMERAS_GET_BRAND_MODELS: "flickr.cameras.getBrandModels",
 };
 
+// Generate Flickr URL
 export function flickrURL(method: string, extras?: string[]) {
   const methodParam = `method=${method}`;
   const apiKeyParam = `&api_key=${process.env.REACT_APP_FLICKR_KEY}`;
