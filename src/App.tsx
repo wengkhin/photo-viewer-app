@@ -76,6 +76,12 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const selectedBrandStrs = selectedBrands.map((sb) => sb.key);
+    const newSelectedModels = selectedModels.filter((sm) =>
+      selectedBrandStrs.includes(sm.key.split("-")[0])
+    );
+    setSelectedModels(newSelectedModels);
+
     if (selectedBrands.length === 0) return;
 
     fetchModels();
@@ -330,8 +336,10 @@ function Navigation(props: NavigationProps) {
           onChange={(items: Item[]) => {
             setSelectedBrands(items);
           }}
+          values={selectedBrands}
           label="Brand"
           loading={brands === undefined}
+          setValues={setSelectedBrands}
         />
       </div>
       <div className={`${styles.modelsDropdown} ${hideInput}`}>
@@ -340,9 +348,11 @@ function Navigation(props: NavigationProps) {
           onChange={(items: Item[]) => {
             setSelectedModels(items);
           }}
+          values={selectedModels}
           label="Model"
           disabled={selectedBrands.length === 0}
           loading={modelIsLoading === true}
+          setValues={setSelectedModels}
         />
       </div>
       <div className={`${styles.search} ${hideInput}`}>

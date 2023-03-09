@@ -17,13 +17,22 @@ interface DropdownProps {
   label?: string;
   disabled?: boolean;
   loading?: boolean;
+  values: Item[];
+  setValues: (val: Item[]) => void;
 }
 
 export function Dropdown(props: DropdownProps) {
-  const { items: data, onChange, label, disabled, loading } = props;
+  const {
+    items: data,
+    onChange,
+    label,
+    disabled,
+    loading,
+    values,
+    setValues,
+  } = props;
 
   const [items, setItems] = useState<Item[]>(data || []);
-  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [open, setOpen] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
@@ -33,13 +42,13 @@ export function Dropdown(props: DropdownProps) {
   }, [data]);
 
   useEffect(() => {
-    onChange(selectedItems);
+    onChange(values);
 
     if (items.length === 0) {
       setOpen(false);
       return;
     }
-  }, [selectedItems, items, onChange]);
+  }, [values, items, onChange]);
 
   useEffect(() => {
     function handleClickOutside(event: TouchEvent | MouseEvent) {
@@ -71,15 +80,15 @@ export function Dropdown(props: DropdownProps) {
           items.length > 0 && setOpen((prev) => !prev);
         }}
       >
-        {!loading && selectedItems.length === 0 && (
+        {!loading && values.length === 0 && (
           <span className={styles.label}>{label}</span>
         )}
-        {selectedItems?.map((val: Item) => (
+        {values?.map((val: Item) => (
           <Badge
             text={val.text}
             key={`${val.key}-badge`}
             removeHandler={() => {
-              setSelectedItems(selectedItems.filter((dd) => dd !== val));
+              setValues(values.filter((dd) => dd !== val));
               setItems([...items, val]);
             }}
           />
@@ -92,8 +101,8 @@ export function Dropdown(props: DropdownProps) {
               className={styles.item}
               key={`${d.key}-item`}
               onClick={() => {
-                if (!selectedItems?.includes(d)) {
-                  setSelectedItems(selectedItems ? [...selectedItems, d] : [d]);
+                if (!values?.includes(d)) {
+                  setValues(values ? [...values, d] : [d]);
                   setItems(items.filter((dd) => dd !== d));
                 }
               }}
