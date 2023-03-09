@@ -5,6 +5,8 @@ interface DropdownProps {
   items?: Item[];
   onChange: (items: Item[]) => void;
   label?: string;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
 export interface Item {
@@ -14,7 +16,7 @@ export interface Item {
 }
 
 export function Dropdown(props: DropdownProps) {
-  const { items: data, onChange, label } = props;
+  const { items: data, onChange, label, disabled, loading } = props;
 
   const [items, setItems] = useState<Item[]>(data || []);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
@@ -54,13 +56,25 @@ export function Dropdown(props: DropdownProps) {
 
   return (
     <div className={styles.dropdown}>
+      {loading && (
+        <div className={styles.ldsEllipsis}>
+          <div></div>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+      )}
       <div
-        className={styles.badgeBox}
+        className={`${styles.badgeBox} ${
+          disabled || loading ? styles.disabled : undefined
+        }`}
         onClick={() => {
+          if (disabled === true || loading === true) return;
+
           items.length > 0 && setOpen((prev) => !prev);
         }}
       >
-        {selectedItems.length === 0 && (
+        {!loading && selectedItems.length === 0 && (
           <span className={styles.label}>{label}</span>
         )}
         {selectedItems?.map((val: Item) => (

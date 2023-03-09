@@ -60,7 +60,7 @@ function GMap(props: GMapProps) {
       googleMapURL={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAP_API}&v=3.exp&libraries=geometry,drawing,places`}
       loadingElement={<div style={{ height: "100%", width: "100%" }} />}
       containerElement={
-        <div style={{ height: "100%", padding: "10px", borderRadius: "5px" }} />
+        <div style={{ height: "100%", width: "100%"}} />
       }
       mapElement={<div style={{ height: "100%", width: "100%" }} />}
       photos={photos}

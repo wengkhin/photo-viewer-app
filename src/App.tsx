@@ -3,6 +3,9 @@ import axios from "axios";
 
 import { Dropdown, Item } from "./component/Dropdown";
 import styles from "./App.module.scss";
+import arrowDown from "./image/arrow_drop_down_FILL0_wght400_GRAD0_opsz48.svg";
+import arrowUp from "./image/arrow_drop_up_FILL0_wght400_GRAD0_opsz48.svg";
+import noResult from "./image/zoom.png";
 
 import GMap, { Position } from "./component/GMap";
 
@@ -21,11 +24,20 @@ export interface Photo {
   thumbnailSq: string;
 }
 
+const width =
+  window.innerWidth ||
+  document.documentElement.clientWidth ||
+  document.body.clientWidth;
+const MAX_WIDTH_FOR_MOBILE = 1224;
+
 function App() {
   const [brands, setBrands] = useState<Item[]>();
   const [models, setModels] = useState<Item[]>();
   const [photos, setPhotos] = useState<Photo[]>();
+
   const [photosToDisplay, setPhotosToDisplay] = useState<Photo[]>();
+  const [expandMenu, setExpandMenu] = useState<boolean>(true);
+  const [modelIsLoading, setModelIsLoading] = useState<boolean>(false);
 
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
@@ -73,6 +85,8 @@ function App() {
     setPhotosToDisplay(newFilteredPhotos);
   }, [filterQuery]);
 
+  useEffect(() => {}, [expandMenu]);
+
   const fetchBrands = async () => {
     axios
       .get(
@@ -92,32 +106,6 @@ function App() {
       .catch(function (error) {
         console.log(error);
       });
-  };
-
-  const fetchModels = async () => {
-    selectedBrands?.forEach((brand) => {
-      axios
-        .get(
-          `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.cameras.getBrandModels&brand=${brand.value}&${apiKeyParam}${formatKeyParam}`
-        )
-        .then(function (response) {
-          const cameras = response.data.cameras.camera;
-          const prepModels = cameras.map((camera: any) => ({
-            key: `${brand.value}-${camera.id}`,
-            text: camera.name._content,
-            value: `${brand.value}/${camera.id}`,
-          }));
-
-          if (models) {
-            setModels([...models, ...prepModels]);
-          } else {
-            setModels(prepModels);
-          }
-        })
-        .catch(function (error) {
-          console.log(error);
-        });
-    });
   };
 
   const searchPhotos = async () => {
@@ -168,12 +156,39 @@ function App() {
     fetchBrands();
   }, []);
 
-  useEffect(() => {
-    if (selectedBrands?.length === 0) {
-      return;
-    }
-    setModels(undefined);
+  const fetchModels = async () => {
+    const allModels: Item[] = [];
+    let promises: any = [];
+    setModelIsLoading(true);
+    selectedBrands?.map((brand) => {
+      promises.push(
+        axios
+          .get(
+            `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.cameras.getBrandModels&brand=${brand.value}&${apiKeyParam}${formatKeyParam}`
+          )
+          .then((response) => {
+            const cameras = response.data.cameras.camera;
+            const prepModels = cameras.map((camera: any) => {
+              return {
+                key: `${brand.value}-${camera.id}`,
+                text: camera.name._content,
+                value: `${brand.value}/${camera.id}`,
+              };
+            });
 
+            allModels.push(...prepModels);
+          })
+      );
+    });
+
+    Promise.all(promises).then(() => {
+      setModels(allModels);
+      setModelIsLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    if (selectedBrands.length === 0) return;
     fetchModels();
   }, [selectedBrands]);
 
@@ -185,43 +200,80 @@ function App() {
     : undefined;
 
   const zoom = selectedPhoto ? 9 : undefined;
+  const disableSearch = selectedModels.length === 0;
 
   return (
     <div>
       <div className={styles.navigation}>
         <div className={styles.logo}>
-          <a href="/">Photo Viewer App</a>
+          <a className={styles.appName} href="/">
+            Photo Viewer App
+          </a>
+          <span className={styles.expandMenuToggle}>
+            {expandMenu === true ? (
+              <img
+                onClick={() => {
+                  setExpandMenu(!expandMenu);
+                }}
+                className={styles.arrowUp}
+                src={arrowUp}
+              />
+            ) : (
+              <img
+                onClick={() => {
+                  setExpandMenu(!expandMenu);
+                }}
+                className={styles.arrowDown}
+                src={arrowDown}
+              />
+            )}
+          </span>
         </div>
-        <div className={styles.buffer}></div>
-        <div className={styles.brandsDropdown}>
-          <Dropdown
-            items={brands}
-            onChange={(items: Item[]) => {
-              setSelectedBrands(items);
-            }}
-            label="Brand"
-          />
-        </div>
-        <div className={styles.modelsDropdown}>
-          <Dropdown
-            items={models}
-            onChange={(items: Item[]) => {
-              setSelectedModels(items);
-            }}
-            label="Model"
-          />
-        </div>
-        <div className={styles.search}>
-          <button
-            className={styles.searchButton}
-            onClick={() => {
-              if (selectedModels?.length === 0) return;
-              searchPhotos();
-            }}
-          >
-            Get
-          </button>
-        </div>
+        {expandMenu && (
+          <>
+            <div className={styles.buffer}></div>
+            <div className={styles.brandsDropdown}>
+              <Dropdown
+                items={brands}
+                onChange={(items: Item[]) => {
+                  setSelectedBrands(items);
+                }}
+                label="Brand"
+                loading={brands === undefined}
+              />
+            </div>
+            <div className={styles.modelsDropdown}>
+              <Dropdown
+                items={models}
+                onChange={(items: Item[]) => {
+                  setSelectedModels(items);
+                }}
+                label="Model"
+                disabled={selectedBrands.length === 0}
+                loading={modelIsLoading === true}
+              />
+            </div>
+            <div className={styles.search}>
+              <button
+                className={`${styles.searchButton} ${
+                  disableSearch ? styles.disabled : undefined
+                } `}
+                disabled={disableSearch}
+                onClick={() => {
+                  if (selectedModels?.length === 0) return;
+
+                  if (width < MAX_WIDTH_FOR_MOBILE) {
+                    setExpandMenu(false);
+                  }
+
+                  searchPhotos();
+                }}
+              >
+                Search
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       <div className={styles.main}>
@@ -238,40 +290,53 @@ function App() {
             )}
           </div>
           <div className={styles.imagesContainer}>
-            {photosToDisplay?.map((photo) => {
-              let isSelected = false;
-              if (selectedPhoto) {
-                if (
-                  selectedPhoto.owner === photo.owner &&
-                  selectedPhoto.id === photo.id
-                ) {
-                  isSelected = true;
+            {photosToDisplay ? (
+              photosToDisplay.map((photo) => {
+                let isSelected = false;
+                if (selectedPhoto) {
+                  if (
+                    selectedPhoto.owner === photo.owner &&
+                    selectedPhoto.id === photo.id
+                  ) {
+                    isSelected = true;
+                  }
                 }
-              }
 
-              return (
-                <div
-                  className={styles.imageitem}
-                  onClick={() => {
-                    setSelectedPhoto(photo);
-                  }}
-                >
-                  <div className={styles.location}>
-                    <span style={{ float: "left" }}>
-                      Lat: {photo.position.lat} Lng: {photo.position.lng}
-                    </span>
+                return (
+                  <div
+                    className={styles.imageitem}
+                    onClick={() => {
+                      setSelectedPhoto(photo);
+                    }}
+                  >
+                    <div className={styles.location}>
+                      <span style={{ float: "left" }}>
+                        Lat: {photo.position.lat} Lng: {photo.position.lng}
+                      </span>
+                    </div>
+                    <img
+                      src={photo.thumbnailM}
+                      className={isSelected ? styles.selected : undefined}
+                    />
+                    <div className={styles.extraDesc}>
+                      <span style={{ float: "left" }}>on {photo.takenOn}</span>
+                      <span style={{ float: "right" }}>
+                        by {photo.ownerName}
+                      </span>
+                    </div>
                   </div>
-                  <img
-                    src={photo.thumbnailM}
-                    className={isSelected ? styles.selected : undefined}
-                  />
-                  <div className={styles.extraDesc}>
-                    <span style={{ float: "left" }}>on {photo.takenOn}</span>
-                    <span style={{ float: "right" }}>by {photo.ownerName}</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className={styles.noSearchResult}>
+                <img src={noResult} className={styles.image} />
+                <p>
+                  No search result.
+                  <br />
+                  Try selecting Brand and Model to begin.
+                </p>
+              </div>
+            )}
           </div>
         </div>
         <div className={styles.sidebar}>

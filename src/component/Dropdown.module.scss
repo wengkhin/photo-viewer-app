@@ -3,7 +3,7 @@
     border: 1px solid #22242626;
     background-color: #ffffff;
     min-height: 1.5em;
-    padding: 0.5rem;
+    padding: 18px 10px 10px 10px;
     border-radius: 0.3rem;
     cursor: pointer;
     height: 22px;
@@ -14,10 +14,18 @@
     }
   }
 
+  .badgeBox.disabled {
+    background-color: #f5f5f5;
+    cursor: no-drop;
+    > span {
+      color: #bbbabb;
+    }
+  }
+
   .menu {
     border-radius: 0.3em;
     border: 1px solid #22242626;
-    max-height: 8em;
+    height: 150px;
     overflow-y: auto;
     position: relative;
     background-color: #ffffff;
@@ -46,5 +54,61 @@
   .remove {
     font-size: 0.8em;
     cursor: pointer;
+  }
+}
+
+.ldsEllipsis {
+  position: relative;
+  left: 40%;
+  bottom: 10px;
+}
+
+.ldsEllipsis div {
+  position: absolute;
+  top: 33px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #bbbabb;
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.ldsEllipsis div:nth-child(1) {
+  left: 8px;
+  animation: ldsEllipsis1 0.6s infinite;
+}
+.ldsEllipsis div:nth-child(2) {
+  left: 8px;
+  animation: ldsEllipsis2 0.6s infinite;
+}
+.ldsEllipsis div:nth-child(3) {
+  left: 32px;
+  animation: ldsEllipsis2 0.6s infinite;
+}
+.ldsEllipsis div:nth-child(4) {
+  left: 56px;
+  animation: ldsEllipsis3 0.6s infinite;
+}
+@keyframes ldsEllipsis1 {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes ldsEllipsis3 {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+@keyframes ldsEllipsis2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 0);
   }
 }
