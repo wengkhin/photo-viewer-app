@@ -159,7 +159,9 @@ function App() {
   const fetchModels = async () => {
     const allModels: Item[] = [];
     let promises: any = [];
+
     setModelIsLoading(true);
+
     selectedBrands?.map((brand) => {
       promises.push(
         axios
@@ -183,12 +185,14 @@ function App() {
 
     Promise.all(promises).then(() => {
       setModels(allModels);
+
       setModelIsLoading(false);
     });
   };
 
   useEffect(() => {
     if (selectedBrands.length === 0) return;
+
     fetchModels();
   }, [selectedBrands]);
 
@@ -201,6 +205,7 @@ function App() {
 
   const zoom = selectedPhoto ? 9 : undefined;
   const disableSearch = selectedModels.length === 0;
+  const hideInput = expandMenu === false ? `${styles.hideInput}` : undefined;
 
   return (
     <div>
@@ -229,51 +234,47 @@ function App() {
             )}
           </span>
         </div>
-        {expandMenu && (
-          <>
-            <div className={styles.buffer}></div>
-            <div className={styles.brandsDropdown}>
-              <Dropdown
-                items={brands}
-                onChange={(items: Item[]) => {
-                  setSelectedBrands(items);
-                }}
-                label="Brand"
-                loading={brands === undefined}
-              />
-            </div>
-            <div className={styles.modelsDropdown}>
-              <Dropdown
-                items={models}
-                onChange={(items: Item[]) => {
-                  setSelectedModels(items);
-                }}
-                label="Model"
-                disabled={selectedBrands.length === 0}
-                loading={modelIsLoading === true}
-              />
-            </div>
-            <div className={styles.search}>
-              <button
-                className={`${styles.searchButton} ${
-                  disableSearch ? styles.disabled : undefined
-                } `}
-                disabled={disableSearch}
-                onClick={() => {
-                  if (selectedModels?.length === 0) return;
+        <div className={`${styles.buffer} ${hideInput}`}></div>
+        <div className={`${styles.brandsDropdown} ${hideInput}`}>
+          <Dropdown
+            items={brands}
+            onChange={(items: Item[]) => {
+              setSelectedBrands(items);
+            }}
+            label="Brand"
+            loading={brands === undefined}
+          />
+        </div>
+        <div className={`${styles.modelsDropdown} ${hideInput}`}>
+          <Dropdown
+            items={models}
+            onChange={(items: Item[]) => {
+              setSelectedModels(items);
+            }}
+            label="Model"
+            disabled={selectedBrands.length === 0}
+            loading={modelIsLoading === true}
+          />
+        </div>
+        <div className={`${styles.search} ${hideInput}`}>
+          <button
+            className={`${styles.searchButton} ${
+              disableSearch ? styles.disabled : undefined
+            } `}
+            disabled={disableSearch}
+            onClick={() => {
+              if (selectedModels?.length === 0) return;
 
-                  if (width < MAX_WIDTH_FOR_MOBILE) {
-                    setExpandMenu(false);
-                  }
+              if (width < MAX_WIDTH_FOR_MOBILE) {
+                setExpandMenu(false);
+              }
 
-                  searchPhotos();
-                }}
-              >
-                Search
-              </button>
-            </div>
-          </>
-        )}
+              searchPhotos();
+            }}
+          >
+            Search
+          </button>
+        </div>
       </div>
 
       <div className={styles.main}>
