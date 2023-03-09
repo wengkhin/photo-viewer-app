@@ -39,6 +39,7 @@ function App() {
   const [expandMenu, setExpandMenu] = useState<boolean>(true);
   const [photosToDisplay, setPhotosToDisplay] = useState<Photo[]>();
   const [modelIsLoading, setModelIsLoading] = useState<boolean>(false);
+  const [disableSearch, setDisableSearch] = useState<boolean>(true);
   const [filterQuery, setFilterQuery] = useState<string>("");
 
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
@@ -58,6 +59,15 @@ function App() {
   useEffect(() => {
     fetchBrands();
   }, []);
+
+  // Make sure disableSearch state disable/enable search button properly
+  useEffect(() => {
+    if (selectedModels.length == 0) {
+      setDisableSearch(true);
+    } else {
+      setDisableSearch(false);
+    }
+  }, [selectedModels]);
 
   // Filter based on photographer, date taken, coordinates
   useEffect(() => {
@@ -114,44 +124,48 @@ function App() {
 
   // Search photos
   const searchPhotos = async () => {
+    const allPhotos: Photo[] = [];
+    let promises: any = [];
+
+    setDisableSearch(true);
     selectedModels?.forEach((model) => {
-      axios
-        .get(
-          flickrURL(FLICKR.PHOTO_SEARCH, [
-            `camera=${model.value}`,
-            "per_page=50",
-            "has_geo=1",
-            `extras=${encodeURI("url_sq,url_m,geo,owner_name,date_taken")}`,
-          ])
-        )
-        .then(function (response) {
-          const data = response.data.photos.photo;
+      promises.push(
+        axios
+          .get(
+            flickrURL(FLICKR.PHOTO_SEARCH, [
+              `camera=${model.value}`,
+              "per_page=50",
+              "has_geo=1",
+              `extras=${encodeURI("url_sq,url_m,geo,owner_name,date_taken")}`,
+            ])
+          )
+          .then(function (response) {
+            const data = response.data.photos.photo;
+            const prepPhotos: Photo[] = data.map((d: any) => ({
+              id: d.id,
+              owner: d.owner,
+              ownerName: d.ownername,
+              takenOn: d.datetaken,
+              position: {
+                lat: parseFloat(d.latitude),
+                lng: parseFloat(d.longitude),
+              },
+              thumbnailM: d.url_m,
+              thumbnailSq: d.url_sq,
+            }));
 
-          const prepPhotos: Photo[] = data.map((d: any) => ({
-            id: d.id,
-            owner: d.owner,
-            ownerName: d.ownername,
-            takenOn: d.datetaken,
-            position: {
-              lat: parseFloat(d.latitude),
-              lng: parseFloat(d.longitude),
-            },
-            thumbnailM: d.url_m,
-            thumbnailSq: d.url_sq,
-          }));
+            allPhotos.push(...prepPhotos);
+          })
+          .catch(function (error) {
+            console.log(error);
+          })
+      );
+    });
 
-          if (photos) {
-            const newPhotos = [...photos, ...prepPhotos];
-            setPhotos(newPhotos);
-            setPhotosToDisplay(newPhotos);
-          } else {
-            setPhotos(prepPhotos);
-            setPhotosToDisplay(prepPhotos);
-          }
-        })
-        .catch(function (error) {
-          console.log(error);
-        });
+    Promise.all(promises).then(() => {
+      setPhotos(allPhotos);
+      setPhotosToDisplay(allPhotos);
+      setDisableSearch(false);
     });
   };
 
@@ -203,6 +217,7 @@ function App() {
         modelIsLoading={modelIsLoading}
         selectedModels={selectedModels}
         searchPhotos={() => searchPhotos()}
+        disableSearch={disableSearch}
       />
 
       <div className={styles.main}>
@@ -292,6 +307,7 @@ interface NavigationProps {
   modelIsLoading: boolean;
   selectedModels: Item[];
   searchPhotos: () => {};
+  disableSearch: boolean;
 }
 
 function Navigation(props: NavigationProps) {
@@ -306,10 +322,10 @@ function Navigation(props: NavigationProps) {
     selectedBrands,
     modelIsLoading,
     searchPhotos,
+    disableSearch,
   } = props;
 
   const hideInput = expandMenu === false ? `${styles.hideInput}` : undefined;
-  const disableSearch = selectedModels.length === 0;
 
   return (
     <div className={styles.navigation}>
@@ -368,7 +384,7 @@ function Navigation(props: NavigationProps) {
           className={`${styles.searchButton} ${
             disableSearch ? styles.disabled : undefined
           } `}
-          disabled={disableSearch}
+          disabled={disableSearch === true}
           onClick={() => {
             if (selectedModels?.length === 0) return;
 
