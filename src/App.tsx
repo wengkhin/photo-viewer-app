@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-import { Dropdown, Item } from "./component/Dropdown";
 import styles from "./App.module.scss";
 import arrowDown from "./image/arrow_drop_down_FILL0_wght400_GRAD0_opsz48.svg";
 import arrowUp from "./image/arrow_drop_up_FILL0_wght400_GRAD0_opsz48.svg";
 import noResult from "./image/zoom.png";
 
-import GMap, { Position } from "./component/GMap";
-
-const FLICKR_ENDPOINT_URL = process.env.REACT_APP_FLICKR_ENDPOINT_URL;
-
-const apiKeyParam = `&api_key=${process.env.REACT_APP_FLICKR_KEY}`;
-const formatKeyParam = "&format=json&nojsoncallback=1";
+import GMap from "./component/GMap";
+import { Dropdown, Item } from "./component/Dropdown";
+import { checkMatchPosition, flickrURL } from "./Helpers";
 
 export interface Photo {
   id: number;
@@ -24,7 +20,12 @@ export interface Photo {
   thumbnailSq: string;
 }
 
-const width =
+export interface Position {
+  lat: number;
+  lng: number;
+}
+
+const currentScreenWidth =
   window.innerWidth ||
   document.documentElement.clientWidth ||
   document.body.clientWidth;
@@ -35,37 +36,22 @@ function App() {
   const [models, setModels] = useState<Item[]>();
   const [photos, setPhotos] = useState<Photo[]>();
 
-  const [photosToDisplay, setPhotosToDisplay] = useState<Photo[]>();
   const [expandMenu, setExpandMenu] = useState<boolean>(true);
+  const [photosToDisplay, setPhotosToDisplay] = useState<Photo[]>();
   const [modelIsLoading, setModelIsLoading] = useState<boolean>(false);
+  const [filterQuery, setFilterQuery] = useState<string>("");
 
   const [selectedBrands, setSelectedBrands] = useState<Item[]>([]);
   const [selectedModels, setSelectedModels] = useState<Item[]>([]);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo>();
-  const [filterQuery, setFilterQuery] = useState<string>("");
 
-  function isNumeric(str: string) {
-    if (str.match(/^-?\d+$/) || str.match(/^\d+\.\d+$/)) {
-      return true;
-    }
-
-    return false;
-  }
-
-  function matchedPosition(position: Position, filterQuery: string) {
-    if (isNumeric(filterQuery)) {
-      return false;
-    }
-
-    const lat = position.lat.toString();
-    const lng = position.lng.toString();
-
-    if (lat.includes(filterQuery) || lng.includes(filterQuery)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
+  const center = selectedPhoto
+    ? ({
+        lat: selectedPhoto.position.lat,
+        lng: selectedPhoto.position.lng,
+      } as Position)
+    : undefined;
+  const zoom = selectedPhoto ? 9 : undefined;
 
   useEffect(() => {
     if (!photos) return;
@@ -79,19 +65,25 @@ function App() {
       (photo) =>
         photo.ownerName.toLowerCase().includes(filterQuery) ||
         photo.takenOn.toLowerCase().includes(filterQuery) ||
-        matchedPosition(photo.position, filterQuery)
+        checkMatchPosition(photo.position, filterQuery)
     );
 
     setPhotosToDisplay(newFilteredPhotos);
   }, [filterQuery]);
 
-  useEffect(() => {}, [expandMenu]);
+  useEffect(() => {
+    fetchBrands();
+  }, []);
+
+  useEffect(() => {
+    if (selectedBrands.length === 0) return;
+
+    fetchModels();
+  }, [selectedBrands]);
 
   const fetchBrands = async () => {
     axios
-      .get(
-        `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.cameras.getBrands&${apiKeyParam}${formatKeyParam}`
-      )
+      .get(flickrURL("flickr.cameras.getBrands"))
       .then(function (response) {
         const brands = response.data.brands.brand;
 
@@ -109,17 +101,15 @@ function App() {
   };
 
   const searchPhotos = async () => {
-    const extrasParam = `&extras=${encodeURI(
-      "url_sq,url_m,geo,owner_name,date_taken"
-    )}`;
-    const hasGeoParam = "&has_geo=1";
-
     selectedModels?.forEach((model) => {
-      const cameraParam = `&camera=${model.value}`;
-
       axios
         .get(
-          `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.photos.search&${cameraParam}${hasGeoParam}${apiKeyParam}${formatKeyParam}${extrasParam}&per_page=30`
+          flickrURL("flickr.photos.search", [
+            `camera=${model.value}`,
+            "per_page=30",
+            "has_geo=1",
+            `extras=${encodeURI("url_sq,url_m,geo,owner_name,date_taken")}`,
+          ])
         )
         .then(function (response) {
           const data = response.data.photos.photo;
@@ -152,21 +142,17 @@ function App() {
     });
   };
 
-  useEffect(() => {
-    fetchBrands();
-  }, []);
-
-  const fetchModels = async () => {
+  async function fetchModels() {
     const allModels: Item[] = [];
     let promises: any = [];
 
     setModelIsLoading(true);
 
-    selectedBrands?.map((brand) => {
+    selectedBrands?.forEach((brand) => {
       promises.push(
         axios
           .get(
-            `${FLICKR_ENDPOINT_URL}/rest/?method=flickr.cameras.getBrandModels&brand=${brand.value}&${apiKeyParam}${formatKeyParam}`
+            flickrURL("flickr.cameras.getBrandModels", [`brand=${brand.value}`])
           )
           .then((response) => {
             const cameras = response.data.cameras.camera;
@@ -188,94 +174,22 @@ function App() {
 
       setModelIsLoading(false);
     });
-  };
-
-  useEffect(() => {
-    if (selectedBrands.length === 0) return;
-
-    fetchModels();
-  }, [selectedBrands]);
-
-  const center = selectedPhoto
-    ? ({
-        lat: selectedPhoto.position.lat,
-        lng: selectedPhoto.position.lng,
-      } as Position)
-    : undefined;
-
-  const zoom = selectedPhoto ? 9 : undefined;
-  const disableSearch = selectedModels.length === 0;
-  const hideInput = expandMenu === false ? `${styles.hideInput}` : undefined;
+  }
 
   return (
     <div>
-      <div className={styles.navigation}>
-        <div className={styles.logo}>
-          <a className={styles.appName} href="/">
-            Photo Viewer App
-          </a>
-          <span className={styles.expandMenuToggle}>
-            {expandMenu === true ? (
-              <img
-                onClick={() => {
-                  setExpandMenu(!expandMenu);
-                }}
-                className={styles.arrowUp}
-                src={arrowUp}
-              />
-            ) : (
-              <img
-                onClick={() => {
-                  setExpandMenu(!expandMenu);
-                }}
-                className={styles.arrowDown}
-                src={arrowDown}
-              />
-            )}
-          </span>
-        </div>
-        <div className={`${styles.buffer} ${hideInput}`}></div>
-        <div className={`${styles.brandsDropdown} ${hideInput}`}>
-          <Dropdown
-            items={brands}
-            onChange={(items: Item[]) => {
-              setSelectedBrands(items);
-            }}
-            label="Brand"
-            loading={brands === undefined}
-          />
-        </div>
-        <div className={`${styles.modelsDropdown} ${hideInput}`}>
-          <Dropdown
-            items={models}
-            onChange={(items: Item[]) => {
-              setSelectedModels(items);
-            }}
-            label="Model"
-            disabled={selectedBrands.length === 0}
-            loading={modelIsLoading === true}
-          />
-        </div>
-        <div className={`${styles.search} ${hideInput}`}>
-          <button
-            className={`${styles.searchButton} ${
-              disableSearch ? styles.disabled : undefined
-            } `}
-            disabled={disableSearch}
-            onClick={() => {
-              if (selectedModels?.length === 0) return;
-
-              if (width < MAX_WIDTH_FOR_MOBILE) {
-                setExpandMenu(false);
-              }
-
-              searchPhotos();
-            }}
-          >
-            Search
-          </button>
-        </div>
-      </div>
+      <Navigation
+        expandMenu={expandMenu}
+        setExpandMenu={setExpandMenu}
+        setSelectedBrands={setSelectedBrands}
+        setSelectedModels={setSelectedModels}
+        selectedBrands={selectedBrands}
+        brands={brands}
+        models={models}
+        modelIsLoading={modelIsLoading}
+        selectedModels={selectedModels}
+        searchPhotos={() => searchPhotos()}
+      />
 
       <div className={styles.main}>
         <div className={styles.content}>
@@ -348,6 +262,107 @@ function App() {
             setSelectedPhoto={setSelectedPhoto}
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface NavigationProps {
+  expandMenu: boolean;
+  setExpandMenu: React.Dispatch<React.SetStateAction<boolean>>;
+  setSelectedBrands: React.Dispatch<React.SetStateAction<Item[]>>;
+  setSelectedModels: React.Dispatch<React.SetStateAction<Item[]>>;
+  selectedBrands: Item[];
+  brands?: Item[];
+  models?: Item[];
+  modelIsLoading: boolean;
+  selectedModels: Item[];
+  searchPhotos: () => {};
+}
+
+function Navigation(props: NavigationProps) {
+  const {
+    expandMenu,
+    setExpandMenu,
+    brands,
+    setSelectedBrands,
+    models,
+    selectedModels,
+    setSelectedModels,
+    selectedBrands,
+    modelIsLoading,
+    searchPhotos,
+  } = props;
+
+  const hideInput = expandMenu === false ? `${styles.hideInput}` : undefined;
+  const disableSearch = selectedModels.length === 0;
+
+  return (
+    <div className={styles.navigation}>
+      <div className={styles.logo}>
+        <a className={styles.appName} href="/">
+          Photo Viewer App
+        </a>
+        <span className={styles.expandMenuToggle}>
+          {expandMenu === true ? (
+            <img
+              onClick={() => {
+                setExpandMenu(!expandMenu);
+              }}
+              className={styles.arrowUp}
+              src={arrowUp}
+            />
+          ) : (
+            <img
+              onClick={() => {
+                setExpandMenu(!expandMenu);
+              }}
+              className={styles.arrowDown}
+              src={arrowDown}
+            />
+          )}
+        </span>
+      </div>
+      <div className={`${styles.buffer} ${hideInput}`}></div>
+      <div className={`${styles.brandsDropdown} ${hideInput}`}>
+        <Dropdown
+          items={brands}
+          onChange={(items: Item[]) => {
+            setSelectedBrands(items);
+          }}
+          label="Brand"
+          loading={brands === undefined}
+        />
+      </div>
+      <div className={`${styles.modelsDropdown} ${hideInput}`}>
+        <Dropdown
+          items={models}
+          onChange={(items: Item[]) => {
+            setSelectedModels(items);
+          }}
+          label="Model"
+          disabled={selectedBrands.length === 0}
+          loading={modelIsLoading === true}
+        />
+      </div>
+      <div className={`${styles.search} ${hideInput}`}>
+        <button
+          className={`${styles.searchButton} ${
+            disableSearch ? styles.disabled : undefined
+          } `}
+          disabled={disableSearch}
+          onClick={() => {
+            if (selectedModels?.length === 0) return;
+
+            if (currentScreenWidth < MAX_WIDTH_FOR_MOBILE) {
+              setExpandMenu(false);
+            }
+
+            searchPhotos();
+          }}
+        >
+          Search
+        </button>
       </div>
     </div>
   );

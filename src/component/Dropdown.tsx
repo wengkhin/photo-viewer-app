@@ -1,5 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import styles from "./Dropdown.module.scss";
+
+import LoadingSpinner from "./LoadingSpinner";
+import Badge from "./Badge";
+
+export interface Item {
+  key: string;
+  text: string;
+  value: string | number;
+}
 
 interface DropdownProps {
   items?: Item[];
@@ -9,19 +19,13 @@ interface DropdownProps {
   loading?: boolean;
 }
 
-export interface Item {
-  key: string;
-  text: string;
-  value: string | number;
-}
-
 export function Dropdown(props: DropdownProps) {
   const { items: data, onChange, label, disabled, loading } = props;
 
   const [items, setItems] = useState<Item[]>(data || []);
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
-
   const [open, setOpen] = useState(false);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,14 +60,7 @@ export function Dropdown(props: DropdownProps) {
 
   return (
     <div className={styles.dropdown}>
-      {loading && (
-        <div className={styles.ldsEllipsis}>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
-      )}
+      {loading && <LoadingSpinner />}
       <div
         className={`${styles.badgeBox} ${
           disabled || loading ? styles.disabled : undefined
@@ -107,21 +104,5 @@ export function Dropdown(props: DropdownProps) {
         </div>
       )}
     </div>
-  );
-}
-
-interface BadgeProps {
-  text: string;
-  removeHandler: () => void;
-}
-
-function Badge(props: BadgeProps) {
-  return (
-    <span className={styles.badge}>
-      {props.text}{" "}
-      <span className={styles.remove} onClick={() => props.removeHandler()}>
-        X
-      </span>
-    </span>
   );
 }

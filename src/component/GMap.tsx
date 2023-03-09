@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+
 import styles from "./GMap.module.scss";
-import { Photo } from "../App";
+
+import { Photo, Position } from "../App";
 
 const GoogleMap = require("react-google-maps").GoogleMap;
 const Marker = require("react-google-maps").Marker;
@@ -9,18 +11,8 @@ const withScriptjs = require("react-google-maps").withScriptjs;
 const InfoWindow = require("react-google-maps").InfoWindow;
 
 const GOOGLE_MAP_API = process.env.REACT_APP_GOOGLE_MAP_API || "";
-
-export interface Position {
-  lat: number;
-  lng: number;
-}
-
-interface GMapProps {
-  photos?: Photo[];
-  center?: Position;
-  zoom?: number;
-  setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
-}
+const INIT_POSITION: Position = { lat: 39.381266, lng: -97.922211 };
+const INIT_ZOOM: number = 3;
 
 interface RGMProps {
   photos: Photo[];
@@ -28,9 +20,6 @@ interface RGMProps {
   zoom?: number;
   setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
 }
-
-const INIT_POSITION: Position = { lat: 39.381266, lng: -97.922211 };
-const INIT_ZOOM: number = 3;
 
 const RGM = withScriptjs(
   withGoogleMap((props: RGMProps) => {
@@ -52,6 +41,12 @@ const RGM = withScriptjs(
   })
 );
 
+interface GMapProps {
+  photos?: Photo[];
+  center?: Position;
+  zoom?: number;
+  setSelectedPhoto: React.Dispatch<React.SetStateAction<Photo | undefined>>;
+}
 function GMap(props: GMapProps) {
   const { center, zoom, setSelectedPhoto, photos } = props;
 
@@ -59,9 +54,7 @@ function GMap(props: GMapProps) {
     <RGM
       googleMapURL={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAP_API}&v=3.exp&libraries=geometry,drawing,places`}
       loadingElement={<div style={{ height: "100%", width: "100%" }} />}
-      containerElement={
-        <div style={{ height: "100%", width: "100%"}} />
-      }
+      containerElement={<div style={{ height: "100%", width: "100%" }} />}
       mapElement={<div style={{ height: "100%", width: "100%" }} />}
       photos={photos}
       center={center}
