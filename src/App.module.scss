@@ -28,8 +28,12 @@ body {
     display: none;
   }
 
-  .appName {
+  .appName,
+  .appName:hover,
+  .appName:visited {
     margin-right: 10px;
+    text-decoration: none;
+    color: #000000;
   }
 
   .logo {
