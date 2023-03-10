@@ -6,9 +6,9 @@ Prerequisite
 
 ## Setup
 - Go to [https://developers.google.com/maps/documentation/javascript/get-api-key](https://developers.google.com/maps/documentation/javascript/get-api-key) and get your Google Map API key.
-- Copy and paste your Google Map API key in `.env` files just as `REACT_APP_GOOGLE_MAP_API=YOUR_GOOGLE_API_KEY_GOES_HERE`.
+- Copy and paste your Google Map API key in `.env` files. For example: `REACT_APP_GOOGLE_MAP_API=YOUR_GOOGLE_API_KEY_GOES_HERE`.
 
-## Available Scripts
+## Start the environment
 ### `yarn start`
 
 Runs the app in the development mode.\
