@@ -1,0 +1,16 @@
+.markerPopup {
+    display: flex;
+    flex-direction: column;
+    width: 120px;
+
+    .thumbnailWrapper {
+        text-align: center;
+    }
+
+    .descriptionWrapper {
+        > p {
+            list-style-type: none;
+            text-align: center;
+        }
+    }
+}

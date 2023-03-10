@@ -1,0 +1,13 @@
+.badge {
+  background-color: #e8e8e8;
+  border-radius: 0.2em;
+  color: #00000099;
+  padding: 0.1em 0.3em 0.1em 0.3em;
+  margin: 0 0.5em 0.5em 0;
+  display: inline-block;
+
+  .remove {
+    font-size: 0.8em;
+    cursor: pointer;
+  }
+}

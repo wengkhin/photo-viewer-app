@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import styles from "./Dropdown.module.scss";
 
-interface DropdownProps {
-  items: Item[];
-  onChange: (items: Item[]) => void;
-}
+import LoadingSpinner from "./LoadingSpinner";
+import Badge from "./Badge";
 
 export interface Item {
   key: string;
@@ -12,26 +11,44 @@ export interface Item {
   value: string | number;
 }
 
-export function Dropdown(props: DropdownProps) {
-  const [items, setItems] = useState<Item[]>(props.items);
-  const [selectedItems, setSelectedItems] = useState<Item[]>([]);
+interface DropdownProps {
+  items?: Item[];
+  onChange: (items: Item[]) => void;
+  label?: string;
+  disabled?: boolean;
+  loading?: boolean;
+  values: Item[];
+  setValues: (val: Item[]) => void;
+}
 
+export function Dropdown(props: DropdownProps) {
+  const {
+    items: data,
+    onChange,
+    label,
+    disabled,
+    loading,
+    values,
+    setValues,
+  } = props;
+
+  const [items, setItems] = useState<Item[]>(data || []);
   const [open, setOpen] = useState(false);
+
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    props.onChange(selectedItems || []);
+    setItems(data || []);
+  }, [data]);
+
+  useEffect(() => {
+    onChange(values);
 
     if (items.length === 0) {
       setOpen(false);
       return;
     }
-
-    if (items.length > 0) {
-      setOpen(true);
-      return;
-    }
-  }, [selectedItems, items]);
+  }, [values, items, onChange]);
 
   useEffect(() => {
     function handleClickOutside(event: TouchEvent | MouseEvent) {
@@ -52,18 +69,26 @@ export function Dropdown(props: DropdownProps) {
 
   return (
     <div className={styles.dropdown}>
+      {loading && <LoadingSpinner />}
       <div
-        className={styles.badgeBox}
+        className={`${styles.badgeBox} ${
+          disabled || loading ? styles.disabled : undefined
+        }`}
         onClick={() => {
+          if (disabled === true || loading === true) return;
+
           items.length > 0 && setOpen((prev) => !prev);
         }}
       >
-        {selectedItems?.map((val: Item) => (
+        {!loading && values.length === 0 && (
+          <span className={styles.label}>{label}</span>
+        )}
+        {values?.map((val: Item) => (
           <Badge
             text={val.text}
             key={`${val.key}-badge`}
             removeHandler={() => {
-              setSelectedItems(selectedItems.filter((dd) => dd !== val));
+              setValues(values.filter((dd) => dd !== val));
               setItems([...items, val]);
             }}
           />
@@ -76,8 +101,8 @@ export function Dropdown(props: DropdownProps) {
               className={styles.item}
               key={`${d.key}-item`}
               onClick={() => {
-                if (!selectedItems?.includes(d)) {
-                  setSelectedItems(selectedItems ? [...selectedItems, d] : [d]);
+                if (!values?.includes(d)) {
+                  setValues(values ? [...values, d] : [d]);
                   setItems(items.filter((dd) => dd !== d));
                 }
               }}
@@ -88,21 +113,5 @@ export function Dropdown(props: DropdownProps) {
         </div>
       )}
     </div>
-  );
-}
-
-interface BadgeProps {
-  text: string;
-  removeHandler: () => void;
-}
-
-function Badge(props: BadgeProps) {
-  return (
-    <span className={styles.badge}>
-      {props.text}{" "}
-      <span className={styles.remove} onClick={() => props.removeHandler()}>
-        X
-      </span>
-    </span>
   );
 }
